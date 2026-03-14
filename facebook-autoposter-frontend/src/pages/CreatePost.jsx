@@ -8,53 +8,38 @@ import CaptionGenerator from "../components/CaptionGenerator";
 const STORAGE_KEY = "fb_autoposter_user_id";
 
 export default function CreatePost() {
-
   const [userId, setUserId] = useState(
     localStorage.getItem(STORAGE_KEY) || ""
   );
 
   const [pages, setPages] = useState([]);
   const [pageId, setPageId] = useState("");
-
   const [uploadedImage, setUploadedImage] = useState(null);
-
   const [caption, setCaption] = useState("");
-
   const [scheduledFor, setScheduledFor] = useState("");
-
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
-
     fetchPages();
   }, [userId]);
 
   async function fetchPages() {
     try {
-
+      setError("");
       const response = await api.get(`/api/pages?userId=${userId}`);
-
       setPages(response.data);
-
     } catch (err) {
-
-      setError(
-        err.response?.data?.message || "Failed to load pages"
-      );
-
+      setError(err.response?.data?.message || "Failed to load pages");
     }
   }
 
   async function handleCreatePost(event) {
-
     event.preventDefault();
 
     try {
-
       setLoading(true);
       setError("");
       setMessage("");
@@ -68,116 +53,87 @@ export default function CreatePost() {
       });
 
       setMessage(`Post created with ID: ${response.data._id}`);
-
       setCaption("");
       setScheduledFor("");
-
     } catch (err) {
-
-      setError(
-        err.response?.data?.message || "Failed to create post"
-      );
-
+      setError(err.response?.data?.message || "Failed to create post");
     } finally {
-
       setLoading(false);
-
     }
   }
 
   return (
-
     <div>
-
       <Header
         title="Create Post"
-        subtitle="Upload an image, generate a caption, and schedule a Facebook post."
+        subtitle="Upload an image, let AI analyze it, then choose a caption and schedule the post."
       />
 
       <div className="card">
-
         <div className="field">
-
           <label>User ID</label>
-
           <input
             value={userId}
             onChange={(e) => {
-
               const value = e.target.value;
-
               setUserId(value);
-
               localStorage.setItem(STORAGE_KEY, value);
-
             }}
             placeholder="Paste backend user id"
           />
-
         </div>
 
+        <PageSelector pages={pages} value={pageId} onChange={setPageId} />
       </div>
 
-      <CaptionGenerator
-        onSelectCaption={(text) => setCaption(text)}
-      />
-
-      <form className="card" onSubmit={handleCreatePost}>
-
-        <PageSelector
-          pages={pages}
-          value={pageId}
-          onChange={setPageId}
-        />
+      <div className="card">
+        <h3>1. Upload Image</h3>
 
         <ImageUploader
           userId={userId}
           onUploaded={(file) => {
-
             setUploadedImage(file);
-
             setMessage("Image uploaded successfully");
-
+            setError("");
           }}
         />
 
-        {uploadedImage?.imageUrl && (
-
-          <div>
-
+        {uploadedImage?.imageUrl ? (
+          <div className="preview-box">
             <img
               src={uploadedImage.imageUrl}
               alt="preview"
               className="post-image"
             />
-
           </div>
+        ) : null}
+      </div>
 
-        )}
+      <CaptionGenerator
+        imageUrl={uploadedImage?.imageUrl}
+        onSelectCaption={setCaption}
+      />
+
+      <form className="card" onSubmit={handleCreatePost}>
+        <h3>3. Finalize Post</h3>
 
         <div className="field">
-
           <label>Caption</label>
-
           <textarea
-            rows="5"
+            rows="6"
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
-            placeholder="Write or generate caption"
+            placeholder="Generate a caption from the uploaded image or type your own"
           />
-
         </div>
 
         <div className="field">
-
           <label>Schedule date and time</label>
-
           <input
             type="datetime-local"
             value={scheduledFor}
             onChange={(e) => setScheduledFor(e.target.value)}
           />
-
         </div>
 
         <button
@@ -187,22 +143,16 @@ export default function CreatePost() {
             !userId ||
             !pageId ||
             !uploadedImage?.imageUrl ||
+            !caption ||
             !scheduledFor
           }
         >
           {loading ? "Creating post..." : "Create scheduled post"}
         </button>
 
-        {message && (
-          <p className="success-text">{message}</p>
-        )}
-
-        {error && (
-          <p className="error-text">{error}</p>
-        )}
-
+        {message ? <p className="success-text">{message}</p> : null}
+        {error ? <p className="error-text">{error}</p> : null}
       </form>
-
     </div>
   );
 }
