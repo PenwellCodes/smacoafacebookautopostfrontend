@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
 import api from "../api/api";
 import Header from "../components/Header";
-import PageSelector from "../components/PageSelector";
-import ImageUploader from "../components/ImageUpLoader";
+import ImageUploader from "../components/ImageUploader";
 import CaptionGenerator from "../components/CaptionGenerator";
+import ClientSelector from "../components/ClientSelector";
 
-const STORAGE_KEY = "fb_autoposter_user_id";
+const AGENCY_OWNER_KEY = "fb_autoposter_agency_owner_id";
+const CLIENT_KEY = "fb_autoposter_client_id";
 
 export default function CreatePost() {
-  const [userId, setUserId] = useState(
-    localStorage.getItem(STORAGE_KEY) || ""
+  const [agencyOwnerId, setAgencyOwnerId] = useState(
+    localStorage.getItem(AGENCY_OWNER_KEY) || ""
   );
 
-  const [pages, setPages] = useState([]);
-  const [pageId, setPageId] = useState("");
+  const [clientId, setClientId] = useState(
+    localStorage.getItem(CLIENT_KEY) || ""
+  );
+
+  const [clients, setClients] = useState([]);
+  const [selectedClient, setSelectedClient] = useState(null);
   const [uploadedImage, setUploadedImage] = useState(null);
   const [caption, setCaption] = useState("");
   const [scheduledFor, setScheduledFor] = useState("");
@@ -22,19 +27,27 @@ export default function CreatePost() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!userId) return;
-    fetchPages();
-  }, [userId]);
+    if (!agencyOwnerId) return;
 
-  async function fetchPages() {
-    try {
-      setError("");
-      const response = await api.get(`/api/pages?userId=${userId}`);
-      setPages(response.data);
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to load pages");
+    async function fetchClients() {
+      try {
+        setError("");
+        const response = await api.get(
+          `/api/clients?agencyOwnerId=${agencyOwnerId}`
+        );
+        setClients(response.data);
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to load clients");
+      }
     }
-  }
+
+    fetchClients();
+  }, [agencyOwnerId]);
+
+  useEffect(() => {
+    const client = clients.find((item) => item._id === clientId) || null;
+    setSelectedClient(client);
+  }, [clientId, clients]);
 
   async function handleCreatePost(event) {
     event.preventDefault();
@@ -44,9 +57,15 @@ export default function CreatePost() {
       setError("");
       setMessage("");
 
+      if (!selectedClient?.pageId) {
+        setError("Selected client does not have a page ID");
+        return;
+      }
+
       const response = await api.post("/api/posts", {
-        userId,
-        pageId,
+        agencyOwnerId,
+        clientId,
+        pageId: selectedClient.pageId,
         imageUrl: uploadedImage?.imageUrl,
         caption,
         scheduledFor: new Date(scheduledFor).toISOString()
@@ -66,31 +85,52 @@ export default function CreatePost() {
     <div>
       <Header
         title="Create Post"
-        subtitle="Upload an image, let AI analyze it, then choose a caption and schedule the post."
+        subtitle="Upload an image, let AI analyze it, choose a caption, and schedule the post."
       />
 
       <div className="card">
         <div className="field">
-          <label>User ID</label>
+          <label>Agency Owner User ID</label>
           <input
-            value={userId}
+            value={agencyOwnerId}
             onChange={(e) => {
               const value = e.target.value;
-              setUserId(value);
-              localStorage.setItem(STORAGE_KEY, value);
+              setAgencyOwnerId(value);
+              localStorage.setItem(AGENCY_OWNER_KEY, value);
             }}
-            placeholder="Paste backend user id"
+            placeholder="Paste backend agency owner id"
           />
         </div>
 
-        <PageSelector pages={pages} value={pageId} onChange={setPageId} />
+        <ClientSelector
+          clients={clients}
+          value={clientId}
+          onChange={(value) => {
+            setClientId(value);
+            localStorage.setItem(CLIENT_KEY, value);
+          }}
+        />
+
+        {selectedClient ? (
+          <div className="field">
+            <label>Selected Client Page</label>
+            <input
+              value={
+                selectedClient.pageName
+                  ? `${selectedClient.pageName} (${selectedClient.pageId || "No Page ID"})`
+                  : selectedClient.pageId || "No Page ID"
+              }
+              readOnly
+            />
+          </div>
+        ) : null}
       </div>
 
       <div className="card">
         <h3>1. Upload Image</h3>
 
         <ImageUploader
-          userId={userId}
+          userId={agencyOwnerId}
           onUploaded={(file) => {
             setUploadedImage(file);
             setMessage("Image uploaded successfully");
@@ -102,7 +142,7 @@ export default function CreatePost() {
           <div className="preview-box">
             <img
               src={uploadedImage.imageUrl}
-              alt="preview"
+              alt="Uploaded preview"
               className="post-image"
             />
           </div>
@@ -140,8 +180,9 @@ export default function CreatePost() {
           type="submit"
           disabled={
             loading ||
-            !userId ||
-            !pageId ||
+            !agencyOwnerId ||
+            !clientId ||
+            !selectedClient?.pageId ||
             !uploadedImage?.imageUrl ||
             !caption ||
             !scheduledFor

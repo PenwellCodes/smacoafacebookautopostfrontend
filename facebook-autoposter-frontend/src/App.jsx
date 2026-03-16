@@ -2,6 +2,7 @@ import { NavLink, Route, Routes } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import ConnectFacebook from "./pages/ConnectFacebook";
 import CreatePost from "./pages/CreatePost";
+import Clients from "./pages/Clients";
 
 export default function App() {
   return (
@@ -9,15 +10,25 @@ export default function App() {
       <aside className="sidebar">
         <h1>FB Autoposter</h1>
         <nav>
-          <NavLink to="/" end>Dashboard</NavLink>
-          <NavLink to="/connect">Connect Facebook</NavLink>
-          <NavLink to="/create">Create Post</NavLink>
+          <NavLink to="/" end>
+            Dashboard
+          </NavLink>
+          <NavLink to="/clients">
+            Clients
+          </NavLink>
+          <NavLink to="/connect">
+            Connect Facebook
+          </NavLink>
+          <NavLink to="/create">
+            Create Post
+          </NavLink>
         </nav>
       </aside>
 
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/clients" element={<Clients />} />
           <Route path="/connect" element={<ConnectFacebook />} />
           <Route path="/create" element={<CreatePost />} />
         </Routes>
