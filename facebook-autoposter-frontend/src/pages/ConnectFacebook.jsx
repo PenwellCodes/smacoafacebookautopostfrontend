@@ -2,7 +2,10 @@ import Header from "../components/Header";
 
 export default function ConnectFacebook() {
   const handleConnect = () => {
-    window.location.href = "http://localhost:5000/api/auth/facebook";
+    const baseUrl =
+      import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+
+    window.location.href = `${baseUrl}/api/auth/facebook`;
   };
 
   return (
