@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/api";
 import Header from "../components/Header";
-import ImageUploader from "../components/ImageUploader";
+import ImageUpLoader from "../components/ImageUpLoader";
 import CaptionGenerator from "../components/CaptionGenerator";
 import ClientSelector from "../components/ClientSelector";
 
@@ -129,7 +129,7 @@ export default function CreatePost() {
       <div className="card">
         <h3>1. Upload Image</h3>
 
-        <ImageUploader
+        <ImageUpLoader
           userId={agencyOwnerId}
           onUploaded={(file) => {
             setUploadedImage(file);
